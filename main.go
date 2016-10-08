@@ -2,77 +2,107 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/mickelsonm/go-helpers/geocoding"
-	"github.com/spf13/cobra"
+	"github.com/mitchellh/cli"
 )
 
 func main() {
-	var lookup geocoding.Lookup
-
-	var doAddress = &cobra.Command{
-		Use:   "address",
-		Short: "Lookup by address",
-		Long:  "Looks up geocoding information for a given address.",
-		Run: func(cmd *cobra.Command, args []string) {
-			lookup = geocoding.Lookup{
-				Address: strings.Join(args, " "),
-			}
-
-			resp, err := lookup.Search()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			fmt.Printf("%+v\n", resp)
+	c := cli.NewCLI("gogeolook", "0.0.2")
+	c.Args = os.Args[1:]
+	c.Commands = map[string]cli.CommandFactory{
+		"address": func() (cli.Command, error) {
+			return new(AddressCommand), nil
+		},
+		"latlng": func() (cli.Command, error) {
+			return new(LatLongCommand), nil
 		},
 	}
 
-	var doLatLong = &cobra.Command{
-		Use:   "latlng [lat] [long]",
-		Short: "Lookup by latitude and longitude coordinate",
-		Long:  "Looks up geocoding information by a given latitude and longitude coordinates.",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
-				fmt.Println(cmd.UseLine())
-				return
-			}
+	exitStatus, err := c.Run()
+	if err != nil {
+		log.Println(err)
+	}
 
-			var lat, lng float64
-			var err error
+	os.Exit(exitStatus)
+}
 
-			lat, err = strconv.ParseFloat(args[0], 10)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
+type AddressCommand struct {
+	cli.Command
+}
 
-			lng, err = strconv.ParseFloat(args[1], 10)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
+func (cmd AddressCommand) Run(args []string) int {
+	if len(args) < 1 {
+		fmt.Println("usage: ", cmd.Help())
+		return 0
+	}
+	lookup := geocoding.Lookup{
+		Address: strings.Join(args, " "),
+	}
 
-			lookup = geocoding.Lookup{
-				Location: &geocoding.Point{
-					Latitude:  lat,
-					Longitude: lng,
-				},
-			}
+	resp, err := lookup.Search()
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+	fmt.Printf("%+v\n", resp)
 
-			resp, err := lookup.Search()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			fmt.Printf("%+v\n", resp)
+	return 1
+}
+func (cmd AddressCommand) Help() string {
+	return "address <location to lookup>"
+}
+func (cmd AddressCommand) Synopsis() string {
+	return "address <location to lookup>"
+}
+
+type LatLongCommand struct {
+	cli.Command
+}
+
+func (cmd LatLongCommand) Run(args []string) int {
+	if len(args) != 2 {
+		fmt.Println("usage: ", cmd.Help())
+		return 0
+	}
+
+	var lat, lng float64
+	var err error
+
+	lat, err = strconv.ParseFloat(args[0], 10)
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+
+	lng, err = strconv.ParseFloat(args[1], 10)
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+
+	lookup := geocoding.Lookup{
+		Location: &geocoding.Point{
+			Latitude:  lat,
+			Longitude: lng,
 		},
 	}
 
-	var app = &cobra.Command{Use: "gogeolook"}
-	app.AddCommand(doAddress)
-	app.AddCommand(doLatLong)
-	app.Execute()
+	resp, err := lookup.Search()
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+	fmt.Printf("%+v\n", resp)
+	return 1
+}
+func (cmd LatLongCommand) Help() string {
+	return "latlng <latitude> <longitude>"
+}
+func (cmd LatLongCommand) Synopsis() string {
+	return "latlng <lat> <lng>"
 }
