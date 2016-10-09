@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -49,10 +50,17 @@ func (cmd AddressCommand) Run(args []string) int {
 		fmt.Println(err)
 		return 0
 	}
-	fmt.Printf("%+v\n", resp)
 
+	js, err := json.MarshalIndent(resp, " ", " ")
+	if err != nil {
+		fmt.Println(fmt.Errorf("error marshaling json: %s", err))
+		return 0
+	}
+
+	fmt.Printf("%s\n", string(js))
 	return 1
 }
+
 func (cmd AddressCommand) Help() string {
 	return "address <location to lookup>"
 }
@@ -97,7 +105,14 @@ func (cmd LatLongCommand) Run(args []string) int {
 		fmt.Println(err)
 		return 0
 	}
-	fmt.Printf("%+v\n", resp)
+
+	js, err := json.MarshalIndent(resp, " ", " ")
+	if err != nil {
+		fmt.Println(fmt.Errorf("error marshaling json: %s", err))
+		return 0
+	}
+
+	fmt.Printf("%s\n", string(js))
 	return 1
 }
 func (cmd LatLongCommand) Help() string {
